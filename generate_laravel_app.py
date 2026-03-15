@@ -50,22 +50,19 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     print("[3/5] Generating migrations …")
-    migration_paths = MigrationGenerator(output_root).generate(schemas)
-    for p in migration_paths:
+    for p in MigrationGenerator(output_root).generate(schemas):
         print(f"  + {p}")
 
     print("[4/5] Generating models …")
-    model_paths = ModelGenerator(output_root).generate(schemas)
-    for p in model_paths:
+    for p in ModelGenerator(output_root).generate(schemas):
         print(f"  + {p}")
 
     print("[5/5] Generating controllers & routes …")
-    controller_paths = ControllerGenerator(output_root).generate(schemas)
-    for p in controller_paths:
+    for p in ControllerGenerator(output_root).generate(schemas):
         print(f"  + {p}")
 
-    route_path = RouteGenerator(output_root).generate(schemas)
-    print(f"  + {route_path}")
+    for p in RouteGenerator(output_root).generate(schemas):
+        print(f"  + {p}")
 
     print(f"\nDone! Files written to: {output_root.resolve()}")
     return 0

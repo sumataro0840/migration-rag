@@ -37,6 +37,18 @@ class ModelGenerator:
         if not fillable_lines:
             fillable_lines = "        // No mass-assignable columns inferred from the Excel file."
 
+        # PKが 'id' 以外の場合は $primaryKey を明示
+        pk_columns = [c for c in table.columns if c.primary]
+        pk_line = ""
+        if pk_columns and pk_columns[0].name != "id":
+            pk_line = f"\n    protected $primaryKey = '{pk_columns[0].name}';"
+
+        # PKが整数でない場合は incrementing = false
+        pk_type = pk_columns[0].data_type.lower() if pk_columns else "bigint"
+        incr_line = ""
+        if pk_type not in {"integer", "bigint", "smallint", "tinyint", "int"}:
+            incr_line = "\n    public $incrementing = false;\n    protected $keyType = 'string';"
+
         return f"""<?php
 
 namespace App\\Models;
@@ -48,7 +60,7 @@ class {table.model_name} extends Model
 {{
     use HasFactory;
 
-    protected $table = '{table.table_name}';
+    protected $table = '{table.table_name}';{pk_line}{incr_line}
 
     protected $fillable = [
 {fillable_lines}

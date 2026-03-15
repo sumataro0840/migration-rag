@@ -1,4 +1,4 @@
-"""Route file generator."""
+"""Route file generator for Laravel 11 (web.php + api.php)."""
 
 from __future__ import annotations
 
@@ -8,35 +8,100 @@ from .schema_converter import TableSchema
 
 
 class RouteGenerator:
-    """Generate Laravel API routes file."""
+    """Generate Laravel route files.
+
+    - routes/web.php : Blade View と連動した resourceルート
+    - routes/api.php : JSON API 用 apiResource ルート（オプション）
+    """
 
     def __init__(self, output_root: str | Path) -> None:
         self.output_root = Path(output_root)
-        self.route_file = self.output_root / "routes" / "api.php"
+        self.routes_dir  = self.output_root / "routes"
 
-    def generate(self, schemas: list[TableSchema]) -> Path:
-        self.route_file.parent.mkdir(parents=True, exist_ok=True)
-        self.route_file.write_text(self._render_routes(schemas), encoding="utf-8")
-        return self.route_file
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
 
-    def _render_routes(self, schemas: list[TableSchema]) -> str:
-        controller_imports = "\n".join(
-            f"use App\\Http\\Controllers\\{table.model_name}Controller;" for table in schemas
-        )
-        route_lines = "\n".join(
-            f"Route::apiResource('{table.table_name}', {table.model_name}Controller::class);"
-            for table in schemas
-        )
+    def generate(self, schemas: list[TableSchema]) -> list[Path]:
+        """web.php と api.php を生成してパスのリストを返す。"""
+        self.routes_dir.mkdir(parents=True, exist_ok=True)
 
-        if not controller_imports:
-            controller_imports = "// No controllers generated"
-        if not route_lines:
-            route_lines = "// No routes generated"
+        web_path = self.routes_dir / "web.php"
+        api_path = self.routes_dir / "api.php"
 
-        return f"""<?php
+        web_path.write_text(self._render_web(schemas), encoding="utf-8")
+        api_path.write_text(self._render_api(schemas), encoding="utf-8")
+
+        return [web_path, api_path]
+
+    # ------------------------------------------------------------------
+    # web.php
+    # ------------------------------------------------------------------
+
+    def _render_web(self, schemas: list[TableSchema]) -> str:
+        imports = "\n".join(
+            f"use App\\Http\\Controllers\\{t.model_name}Controller;"
+            for t in schemas
+        ) or "// No controllers generated"
+
+        routes = "\n".join(
+            f"Route::resource('{t.table_name}', {t.model_name}Controller::class);"
+            for t in schemas
+        ) or "// No routes generated"
+
+        return f"""\
+<?php
 
 use Illuminate\\Support\\Facades\\Route;
-{controller_imports}
+{imports}
 
-{route_lines}
+/*
+|--------------------------------------------------------------------------
+| Web Routes  –  Blade View CRUD
+|--------------------------------------------------------------------------
+| generate_laravel_app.py によって自動生成されました。
+| 各コントローラは resources/views/{{table}}/ 配下のBladeを返します。
+*/
+
+Route::get('/', function () {{
+    return redirect()->route('dashboard');
+}})->name('home');
+
+Route::get('/dashboard', function () {{
+    return view('dashboard');
+}})->name('dashboard');
+
+{routes}
+"""
+
+    # ------------------------------------------------------------------
+    # api.php
+    # ------------------------------------------------------------------
+
+    def _render_api(self, schemas: list[TableSchema]) -> str:
+        imports = "\n".join(
+            f"use App\\Http\\Controllers\\{t.model_name}Controller;"
+            for t in schemas
+        ) or "// No controllers generated"
+
+        routes = "\n".join(
+            f"Route::apiResource('{t.table_name}', {t.model_name}Controller::class);"
+            for t in schemas
+        ) or "// No routes generated"
+
+        return f"""\
+<?php
+
+use Illuminate\\Support\\Facades\\Route;
+{imports}
+
+/*
+|--------------------------------------------------------------------------
+| API Routes  –  JSON endpoints
+|--------------------------------------------------------------------------
+| Web コントローラを共用しています。
+| API専用のコントローラに差し替える場合はここを変更してください。
+*/
+
+{routes}
 """
