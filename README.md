@@ -13,7 +13,8 @@ Excelのテーブル定義から Laravel の Migration / Model / Controller / Ro
 
 ### 2. 依存パッケージをインストール
 
-```bash
+```WSL2
+python3 -m venv venv
 pip install -r requirements.txt
 ```
 

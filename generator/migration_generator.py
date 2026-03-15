@@ -38,6 +38,7 @@ class MigrationGenerator:
 
 use Illuminate\\Database\\Migrations\\Migration;
 use Illuminate\\Database\\Schema\\Blueprint;
+use Illuminate\\Support\\Facades\\DB;
 use Illuminate\\Support\\Facades\\Schema;
 
 return new class extends Migration
@@ -148,12 +149,21 @@ return new class extends Migration
 
     @staticmethod
     def _php_literal(value: str) -> str:
-        lowered = value.lower()
+        lowered = value.lower().strip()
         if lowered in {"null", "none"}:
             return "null"
         if lowered in {"true", "false"}:
             return lowered
         if re.fullmatch(r"-?\d+(\.\d+)?", value):
             return value
+        # MySQL の関数式はクォートせず DB::raw() で渡す
+        _SQL_FUNCTIONS = {
+            "current_timestamp", "current_timestamp()",
+            "current_date", "current_date()",
+            "current_time", "current_time()",
+            "now()", "now",
+        }
+        if lowered in _SQL_FUNCTIONS:
+            return f"\\DB::raw('{value}')"
         escaped = value.replace("'", "\\'")
         return f"'{escaped}'"

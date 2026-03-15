@@ -3,16 +3,18 @@ __pycache__/
 *.pyc
 
 # Virtual environment
-rag/.venv/
 .venv/
+venv/
 
 # Environment files
 .env
 
-# OS / Editor
+# Editor / OS
+.vscode/
 .DS_Store
 Thumbs.db
-.vscode/
 
 # Logs
 *.log
+
+laravel_output
