@@ -29,7 +29,7 @@ class ModelGenerator:
         fillable_columns = [
             column.name
             for column in table.columns
-            if not (column.primary and column.auto_increment)
+            if not column.primary  # PKはauto_increment有無にかかわらず除外
             and column.name not in {"created_at", "updated_at", "deleted_at"}
         ]
 

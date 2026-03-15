@@ -70,7 +70,11 @@ return new class extends Migration
         return "\n".join(lines)
 
     def _render_column(self, column: ColumnSchema) -> str:
-        if column.primary and column.auto_increment:
+        # PKは auto_increment フラグ有無にかかわらず $table->id() で生成
+        # （Excelで採番列が空欄でも整数PKは AUTO_INCREMENT にする）
+        if column.primary and column.data_type.lower() in {
+            "integer", "bigint", "smallint", "tinyint", "int"
+        }:
             if column.name == "id":
                 return "$table->id();"
             return f"$table->id('{column.name}');"
